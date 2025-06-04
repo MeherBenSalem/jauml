@@ -187,6 +187,11 @@ tasks.named('jar', Jar).configure {
     finalizedBy 'reobfJar'
 }
 
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
+
 publishing {
     repositories {
         maven {
@@ -200,7 +205,8 @@ publishing {
     }
     publications {
         gpr(MavenPublication) {
-            from(components.java)
+            from components.java
+            artifact sourcesJar
         }
     }
 }
