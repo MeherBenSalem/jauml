@@ -13,13 +13,15 @@ import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import net.minecraft.client.Minecraft;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 public class JaumlConfigLib {
-    private static final String CONFIG_DIR = Minecraft.getInstance().gameDirectory + "/config";
     private static final Logger LOGGER = Logger.getLogger("JaumlConfigLib");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static boolean createConfigFile(String fileName) {
+        String CONFIG_DIR = String.valueOf(FMLPaths.CONFIGDIR.get().resolve(fileName + ".json"));
+
         LOGGER.log(Level.INFO, "Attempting to create or verify config file: {0}", fileName);
 
         if (!fileName.endsWith(".json")) {
@@ -56,6 +58,8 @@ public class JaumlConfigLib {
     }
 
     public static boolean addArrayToConfig(String fileName, String arrayKey, JsonArray array) {
+        String CONFIG_DIR = String.valueOf(FMLPaths.CONFIGDIR.get().resolve(fileName + ".json"));
+
         LOGGER.log(Level.INFO, "Attempting to add array with key '{0}' to config file: {1}", new Object[]{arrayKey, fileName});
 
         if (!createConfigFile(fileName)) {
@@ -106,6 +110,8 @@ public class JaumlConfigLib {
 
     // Retrieves the array from the JSON config file for the specified key
     public static JsonArray getArrayFromConfig(String fileName, String arrayKey) {
+        String CONFIG_DIR = String.valueOf(FMLPaths.CONFIGDIR.get().resolve(fileName + ".json"));
+
         LOGGER.log(Level.INFO, "Attempting to retrieve array with key '{0}' from config file: {1}", new Object[]{arrayKey, fileName});
 
         if (!createConfigFile(fileName)) {
