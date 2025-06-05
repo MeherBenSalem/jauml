@@ -6,38 +6,35 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import net.minecraftforge.fml.loading.FMLPaths;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.logging.Level;
-import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.loading.FMLPaths;
 
 public class JaumlConfigLib {
     private static final Logger LOGGER = Logger.getLogger("JaumlConfigLib");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    public static boolean createConfigFile(String fileName) {
-        String CONFIG_DIR = String.valueOf(FMLPaths.CONFIGDIR.get().resolve(fileName + ".json"));
-
-        LOGGER.log(Level.INFO, "Attempting to create or verify config file: {0}", fileName);
+    public static boolean createConfigFile(String dir, String fileName) {
+        LOGGER.log(Level.INFO, "Attempting to create or verify config file: {0} in directory: {1}", new Object[]{fileName, dir});
 
         if (!fileName.endsWith(".json")) {
             fileName = fileName + ".json";
             LOGGER.log(Level.FINE, "Appended .json extension to filename: {0}", fileName);
         }
 
-        File configDir = new File(CONFIG_DIR);
-        File configFile = new File(CONFIG_DIR + "/" + fileName);
+        File configDir = FMLPaths.CONFIGDIR.get().resolve(dir).toFile();
+        File configFile = new File(configDir, fileName);
 
         if (!configDir.exists()) {
-            LOGGER.log(Level.FINE, "Config directory does not exist, creating: {0}", CONFIG_DIR);
+            LOGGER.log(Level.FINE, "Config directory does not exist, creating: {0}", configDir.getPath());
             configDir.mkdirs();
             LOGGER.log(Level.FINE, "Config directory created: {0}", configDir.exists());
         } else {
-            LOGGER.log(Level.FINE, "Config directory already exists: {0}", CONFIG_DIR);
+            LOGGER.log(Level.FINE, "Config directory already exists: {0}", configDir.getPath());
         }
 
         if (configFile.exists()) {
@@ -57,12 +54,10 @@ public class JaumlConfigLib {
         }
     }
 
-    public static boolean addArrayToConfig(String fileName, String arrayKey, JsonArray array) {
-        String CONFIG_DIR = String.valueOf(FMLPaths.CONFIGDIR.get().resolve(fileName + ".json"));
+    public static boolean addArrayToConfig(String dir, String fileName, String arrayKey, JsonArray array) {
+        LOGGER.log(Level.INFO, "Attempting to add array with key '{0}' to config file: {1} in directory: {2}", new Object[]{arrayKey, fileName, dir});
 
-        LOGGER.log(Level.INFO, "Attempting to add array with key '{0}' to config file: {1}", new Object[]{arrayKey, fileName});
-
-        if (!createConfigFile(fileName)) {
+        if (!createConfigFile(dir, fileName)) {
             LOGGER.log(Level.SEVERE, "Failed to ensure config file exists: {0}", fileName);
             return false;
         }
@@ -72,7 +67,7 @@ public class JaumlConfigLib {
             LOGGER.log(Level.FINE, "Appended .json extension to filename: {0}", fileName);
         }
 
-        File configFile = new File(CONFIG_DIR + "/" + fileName);
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
         JsonObject jsonObject = new JsonObject();
 
         if (configFile.length() > 0) {
@@ -108,13 +103,10 @@ public class JaumlConfigLib {
         }
     }
 
-    // Retrieves the array from the JSON config file for the specified key
-    public static JsonArray getArrayFromConfig(String fileName, String arrayKey) {
-        String CONFIG_DIR = String.valueOf(FMLPaths.CONFIGDIR.get().resolve(fileName + ".json"));
+    public static JsonArray getArrayFromConfig(String dir, String fileName, String arrayKey) {
+        LOGGER.log(Level.INFO, "Attempting to retrieve array with key '{0}' from config file: {1} in directory: {2}", new Object[]{arrayKey, fileName, dir});
 
-        LOGGER.log(Level.INFO, "Attempting to retrieve array with key '{0}' from config file: {1}", new Object[]{arrayKey, fileName});
-
-        if (!createConfigFile(fileName)) {
+        if (!createConfigFile(dir, fileName)) {
             LOGGER.log(Level.SEVERE, "Failed to ensure config file exists: {0}", fileName);
             return null;
         }
@@ -124,7 +116,7 @@ public class JaumlConfigLib {
             LOGGER.log(Level.FINE, "Appended .json extension to filename: {0}", fileName);
         }
 
-        File configFile = new File(CONFIG_DIR + "/" + fileName);
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
 
         if (configFile.length() == 0) {
             LOGGER.log(Level.WARNING, "Config file is empty: {0}", configFile.getPath());
