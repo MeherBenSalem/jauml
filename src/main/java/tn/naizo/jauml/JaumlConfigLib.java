@@ -78,6 +78,29 @@ public class JaumlConfigLib {
         return false;
     }
 
+    public static boolean arrayKeyExists(String dir, String fileName, String key) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            return false;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+            if (root != null) {
+                return root.has(key);
+            }
+        } catch (IOException | JsonParseException e) {
+            LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
+        }
+
+        return false;
+    }
+
     public static boolean addStringToArray(String dir, String fileName, String arrayKey, String stringToAdd) {
 
         if (!fileName.endsWith(".json")) {
