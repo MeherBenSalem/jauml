@@ -235,7 +235,7 @@ public class JaumlConfigLib {
 
         return null;
     }
-    public static Number getNumberValue(String dir, String fileName, String key) {
+    public static int getNumberValue(String dir, String fileName, String key) {
         if (!fileName.endsWith(".json")) {
             fileName = fileName + ".json";
         }
@@ -243,7 +243,7 @@ public class JaumlConfigLib {
         File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
 
         if (!configFile.exists()) {
-            return null;
+            return 0;
         }
 
         try (FileReader reader = new FileReader(configFile)) {
@@ -251,13 +251,17 @@ public class JaumlConfigLib {
             if (root != null && root.has(key)) {
                 JsonElement element = root.get(key);
                 if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isNumber()) {
-                    return element.getAsNumber();
+                    Number number = element.getAsNumber();
+                    if (number.doubleValue() == number.intValue()) { // Check if it's a whole number
+                        return number.intValue();
+                    }
                 }
             }
         } catch (IOException | JsonParseException e) {
             LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
         }
-        return null;
+
+        return 0;
     }
     public static boolean setStringValue(String dir, String fileName, String key, String value) {
         if (!fileName.endsWith(".json")) {
@@ -298,6 +302,69 @@ public class JaumlConfigLib {
         }
     }
     public static boolean setNumberValue(String dir, String fileName, String key, int value) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            if (!createConfigFile(dir, fileName)) {
+                LOGGER.log(Level.SEVERE, "Failed to create config file: {0}", configFile.getPath());
+                return false;
+            }
+        }
+
+        JsonObject root = new JsonObject();
+
+        if (configFile.exists()) {
+            try (FileReader reader = new FileReader(configFile)) {
+                root = GSON.fromJson(reader, JsonObject.class);
+                if (root == null) {
+                    root = new JsonObject();
+                }
+            } catch (IOException | JsonParseException e) {
+                LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
+                return false;
+            }
+        }
+
+        root.addProperty(key, value);
+
+        try (FileWriter writer = new FileWriter(configFile)) {
+            GSON.toJson(root, writer);
+            return true;
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Error writing to config file: {0}", e.getMessage());
+            return false;
+        }
+    }
+    public static boolean getBooleanValue(String dir, String fileName, String key) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            return false;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+            if (root != null && root.has(key)) {
+                JsonElement element = root.get(key);
+                if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isBoolean()) {
+                    return element.getAsBoolean();
+                }
+            }
+        } catch (IOException | JsonParseException e) {
+            LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
+        }
+
+        return false;
+    }
+    public static boolean setBooleanValue(String dir, String fileName, String key, boolean value) {
         if (!fileName.endsWith(".json")) {
             fileName = fileName + ".json";
         }
