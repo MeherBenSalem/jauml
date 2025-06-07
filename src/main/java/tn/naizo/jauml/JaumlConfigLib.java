@@ -235,7 +235,7 @@ public class JaumlConfigLib {
 
         return null;
     }
-    public static int getNumberValue(String dir, String fileName, String key) {
+    public static double getNumberValue(String dir, String fileName, String key) {
         if (!fileName.endsWith(".json")) {
             fileName = fileName + ".json";
         }
@@ -243,7 +243,7 @@ public class JaumlConfigLib {
         File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
 
         if (!configFile.exists()) {
-            return 0;
+            return 0.0;
         }
 
         try (FileReader reader = new FileReader(configFile)) {
@@ -251,17 +251,14 @@ public class JaumlConfigLib {
             if (root != null && root.has(key)) {
                 JsonElement element = root.get(key);
                 if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isNumber()) {
-                    Number number = element.getAsNumber();
-                    if (number.doubleValue() == number.intValue()) { // Check if it's a whole number
-                        return number.intValue();
-                    }
+                    return element.getAsNumber().doubleValue();
                 }
             }
         } catch (IOException | JsonParseException e) {
             LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
         }
 
-        return 0;
+        return 0.0;
     }
     public static boolean setStringValue(String dir, String fileName, String key, String value) {
         if (!fileName.endsWith(".json")) {
@@ -301,7 +298,7 @@ public class JaumlConfigLib {
             return false;
         }
     }
-    public static boolean setNumberValue(String dir, String fileName, String key, int value) {
+    public static boolean setNumberValue(String dir, String fileName, String key, double value) {
         if (!fileName.endsWith(".json")) {
             fileName = fileName + ".json";
         }
