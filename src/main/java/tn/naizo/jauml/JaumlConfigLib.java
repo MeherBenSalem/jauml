@@ -153,4 +153,186 @@ public class JaumlConfigLib {
         return configFile.exists();
     }
 
+    public static int getArrayLength(String dir, String fileName, String arrayKey) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            return 0;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+            if (root != null && root.has(arrayKey)) {
+                JsonElement element = root.get(arrayKey);
+                if (element.isJsonArray()) {
+                    return element.getAsJsonArray().size();
+                }
+            }
+        } catch (IOException | JsonParseException e) {
+            LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
+        }
+
+        return 0;
+    }
+    public static String getArrayElement(String dir, String fileName, String arrayKey, int index) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            return null;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+            if (root != null && root.has(arrayKey)) {
+                JsonElement element = root.get(arrayKey);
+                if (element.isJsonArray()) {
+                    JsonArray array = element.getAsJsonArray();
+                    if (index >= 0 && index < array.size()) {
+                        JsonElement item = array.get(index);
+                        if (item.isJsonPrimitive()) {
+                            return item.getAsString();
+                        }
+                    }
+                }
+            }
+        } catch (IOException | JsonParseException e) {
+            LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
+        }
+
+        return null;
+    }
+
+    public static String getStringValue(String dir, String fileName, String key) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            return null;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+            if (root != null && root.has(key)) {
+                JsonElement element = root.get(key);
+                if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+                    return element.getAsString();
+                }
+            }
+        } catch (IOException | JsonParseException e) {
+            LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
+        }
+
+        return null;
+    }
+    public static Number getNumberValue(String dir, String fileName, String key) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            return null;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+            if (root != null && root.has(key)) {
+                JsonElement element = root.get(key);
+                if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isNumber()) {
+                    return element.getAsNumber();
+                }
+            }
+        } catch (IOException | JsonParseException e) {
+            LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
+        }
+        return null;
+    }
+    public static boolean setStringValue(String dir, String fileName, String key, String value) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            if (!createConfigFile(dir, fileName)) {
+                LOGGER.log(Level.SEVERE, "Failed to create config file: {0}", configFile.getPath());
+                return false;
+            }
+        }
+
+        JsonObject root = new JsonObject();
+
+        if (configFile.exists()) {
+            try (FileReader reader = new FileReader(configFile)) {
+                root = GSON.fromJson(reader, JsonObject.class);
+                if (root == null) {
+                    root = new JsonObject();
+                }
+            } catch (IOException | JsonParseException e) {
+                LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
+                return false;
+            }
+        }
+
+        root.addProperty(key, value);
+
+        try (FileWriter writer = new FileWriter(configFile)) {
+            GSON.toJson(root, writer);
+            return true;
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Error writing to config file: {0}", e.getMessage());
+            return false;
+        }
+    }
+    public static boolean setNumberValue(String dir, String fileName, String key, int value) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            if (!createConfigFile(dir, fileName)) {
+                LOGGER.log(Level.SEVERE, "Failed to create config file: {0}", configFile.getPath());
+                return false;
+            }
+        }
+
+        JsonObject root = new JsonObject();
+
+        if (configFile.exists()) {
+            try (FileReader reader = new FileReader(configFile)) {
+                root = GSON.fromJson(reader, JsonObject.class);
+                if (root == null) {
+                    root = new JsonObject();
+                }
+            } catch (IOException | JsonParseException e) {
+                LOGGER.log(Level.SEVERE, "Error reading or parsing config file: {0}", e.getMessage());
+                return false;
+            }
+        }
+
+        root.addProperty(key, value);
+
+        try (FileWriter writer = new FileWriter(configFile)) {
+            GSON.toJson(root, writer);
+            return true;
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Error writing to config file: {0}", e.getMessage());
+            return false;
+        }
+    }
 }
