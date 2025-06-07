@@ -2,6 +2,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    id 'maven-publish'
 }
 
 
@@ -185,7 +186,6 @@ publishing {
     publications {
         gpr(MavenPublication) {
             from components.java
-            artifact sourcesJar
         }
     }
 }
