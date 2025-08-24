@@ -45,9 +45,7 @@ public class JaumlConfigLib {
             return false;
         }
     }
-
     public static boolean stringExistsInArray(String dir, String fileName, String arrayKey, String targetString) {
-
         if (!fileName.endsWith(".json")) {
             fileName = fileName + ".json";
         }
@@ -65,8 +63,12 @@ public class JaumlConfigLib {
                 if (element.isJsonArray()) {
                     JsonArray array = element.getAsJsonArray();
                     for (JsonElement item : array) {
-                        if (item.isJsonPrimitive() && item.getAsString().equals(targetString)) {
-                            return true;
+                        if (item.isJsonPrimitive()) {
+                            String value = item.getAsString();
+                            // Check if the array element contains the target string
+                            if (value.contains(targetString)) {
+                                return true;
+                            }
                         }
                     }
                 }
