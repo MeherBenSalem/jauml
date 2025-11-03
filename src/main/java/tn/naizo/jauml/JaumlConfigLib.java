@@ -401,4 +401,115 @@ public class JaumlConfigLib {
             return false;
         }
     }
+
+    public static boolean clearArray(String dir, String fileName, String arrayKey) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            LOGGER.log(Level.WARNING, "Config file does not exist: {0}", configFile.getPath());
+            return false;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+            if (root == null) root = new JsonObject();
+
+            // Replace the array with an empty one
+            root.add(arrayKey, new JsonArray());
+
+            try (FileWriter writer = new FileWriter(configFile)) {
+                GSON.toJson(root, writer);
+                return true;
+            }
+
+        } catch (IOException | JsonParseException e) {
+            LOGGER.log(Level.SEVERE, "Error clearing array in config file: {0}", e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean removeArrayElement(String dir, String fileName, String arrayKey, String valueToRemove) {
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            LOGGER.log(Level.WARNING, "Config file does not exist: {0}", configFile.getPath());
+            return false;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+            if (root == null || !root.has(arrayKey) || !root.get(arrayKey).isJsonArray()) {
+                LOGGER.log(Level.WARNING, "Array key not found or not a valid array: {0}", arrayKey);
+                return false;
+            }
+
+            JsonArray array = root.getAsJsonArray(arrayKey);
+            JsonArray updatedArray = new JsonArray();
+
+            boolean removed = false;
+            for (JsonElement element : array) {
+                if (element.isJsonPrimitive() && element.getAsString().equals(valueToRemove)) {
+                    removed = true;
+                    continue;
+                }
+                updatedArray.add(element);
+            }
+
+            if (!removed) {
+                return false;
+            }
+
+            root.add(arrayKey, updatedArray);
+
+            try (FileWriter writer = new FileWriter(configFile)) {
+                GSON.toJson(root, writer);
+                return true;
+            }
+
+        } catch (IOException | JsonParseException e) {
+            LOGGER.log(Level.SEVERE, "Error removing array element: {0}", e.getMessage());
+            return false;
+        }
+    }
+    public static java.util.List<String> getArrayAsList(String dir, String fileName, String arrayKey) {
+        java.util.List<String> result = new java.util.ArrayList<>();
+
+        if (!fileName.endsWith(".json")) {
+            fileName = fileName + ".json";
+        }
+
+        File configFile = FMLPaths.CONFIGDIR.get().resolve(dir).resolve(fileName).toFile();
+
+        if (!configFile.exists()) {
+            return result;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonObject root = GSON.fromJson(reader, JsonObject.class);
+            if (root != null && root.has(arrayKey)) {
+                JsonElement element = root.get(arrayKey);
+                if (element.isJsonArray()) {
+                    for (JsonElement item : element.getAsJsonArray()) {
+                        if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
+                            result.add(item.getAsString());
+                        } else {
+                            result.add(item.toString());
+                        }
+                    }
+                }
+            }
+        } catch (IOException | JsonParseException e) {
+            LOGGER.log(Level.SEVERE, "Error reading array as list: {0}", e.getMessage());
+        }
+
+        return result;
+    }
 }
