@@ -1,0 +1,56 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev.legacyforge'
+}
+
+legacyForge {
+    version = "${minecraft_version}-${forge_version}"
+    validateAccessTransformers = true
+
+    def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers = ["src/main/resources/META-INF/accesstransformer.cfg"]
+    }
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArguments.add('--nogui')
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', mod_id, '--all',
+                '--output', file('src/generated/resources/').absolutePath,
+                '--existing', file('src/main/resources/').absolutePath
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+sourceSets.main.resources.srcDir 'src/generated/resources'
+
+dependencies {
+    implementation project(':common')
+}
+
+jar {
+    manifest.attributes([
+        'Specification-Title': mod_id,
+        'Specification-Vendor': mod_author,
+        'Implementation-Title': project.name,
+        'Implementation-Version': project.jar.archiveVersion,
+        'Implementation-Vendor': mod_author,
+    ])
+}
