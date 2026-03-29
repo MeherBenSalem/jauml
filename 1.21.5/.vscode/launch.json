@@ -12,11 +12,11 @@
       "projectName": "neoforge",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@E:\\Minecraft\\jauml\\jauml\\1.21.5\\neoforge\\build\\moddev\\clientRunProgramArgs.txt"
+        "@D:\\Projects\\NightBeam\\jauml\\1.21.5\\neoforge\\build\\moddev\\clientRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@E:\\Minecraft\\jauml\\jauml\\1.21.5\\neoforge\\build\\moddev\\clientRunVmArgs.txt",
-        "-Dfml.modFolders\u003djauml%%E:\\Minecraft\\jauml\\jauml\\1.21.5\\neoforge\\bin\\main"
+        "@D:\\Projects\\NightBeam\\jauml\\1.21.5\\neoforge\\build\\moddev\\clientRunVmArgs.txt",
+        "-Dfml.modFolders\u003djauml%%D:\\Projects\\NightBeam\\jauml\\1.21.5\\neoforge\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\neoforge\\run",
       "env": {},
@@ -34,11 +34,11 @@
       "projectName": "neoforge",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@E:\\Minecraft\\jauml\\jauml\\1.21.5\\neoforge\\build\\moddev\\dataRunProgramArgs.txt"
+        "@D:\\Projects\\NightBeam\\jauml\\1.21.5\\neoforge\\build\\moddev\\dataRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@E:\\Minecraft\\jauml\\jauml\\1.21.5\\neoforge\\build\\moddev\\dataRunVmArgs.txt",
-        "-Dfml.modFolders\u003djauml%%E:\\Minecraft\\jauml\\jauml\\1.21.5\\neoforge\\bin\\main"
+        "@D:\\Projects\\NightBeam\\jauml\\1.21.5\\neoforge\\build\\moddev\\dataRunVmArgs.txt",
+        "-Dfml.modFolders\u003djauml%%D:\\Projects\\NightBeam\\jauml\\1.21.5\\neoforge\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\neoforge\\run",
       "env": {},
@@ -56,11 +56,11 @@
       "projectName": "neoforge",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@E:\\Minecraft\\jauml\\jauml\\1.21.5\\neoforge\\build\\moddev\\serverRunProgramArgs.txt"
+        "@D:\\Projects\\NightBeam\\jauml\\1.21.5\\neoforge\\build\\moddev\\serverRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@E:\\Minecraft\\jauml\\jauml\\1.21.5\\neoforge\\build\\moddev\\serverRunVmArgs.txt",
-        "-Dfml.modFolders\u003djauml%%E:\\Minecraft\\jauml\\jauml\\1.21.5\\neoforge\\bin\\main"
+        "@D:\\Projects\\NightBeam\\jauml\\1.21.5\\neoforge\\build\\moddev\\serverRunVmArgs.txt",
+        "-Dfml.modFolders\u003djauml%%D:\\Projects\\NightBeam\\jauml\\1.21.5\\neoforge\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\neoforge\\run",
       "env": {},
