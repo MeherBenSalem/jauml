@@ -8,8 +8,8 @@
         "${mod_author}"
     ],
     "contact": {
-        "homepage": "https://fabricmc.net/",
-        "sources": "https://github.com/FabricMC/fabric-example-mod"
+        "homepage": "https://github.com/MeherBenSalem/jauml",
+        "sources": "https://github.com/MeherBenSalem/jauml"
     },
     "license": "${license}",
     "icon": "${mod_id}.png",
@@ -19,13 +19,9 @@
             "tn.naizo.jauml.Jauml"
         ]
     },
-    "mixins": [
-        "${mod_id}.mixins.json",
-        "${mod_id}.fabric.mixins.json"
-    ],
+    "mixins": [],
     "depends": {
         "fabricloader": ">=${fabric_loader_version}",
-        "fabric-api": "*",
         "minecraft": "~${minecraft_version}",
         "java": ">=${java_version}"
     },

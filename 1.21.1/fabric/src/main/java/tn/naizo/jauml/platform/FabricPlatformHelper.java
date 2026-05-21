@@ -1,10 +1,10 @@
 package tn.naizo.jauml.platform;
 
-import tn.naizo.jauml.platform.services.IPlatformHelper;
+import tn.naizo.jauml.spi.PlatformProvider;
 import net.fabricmc.loader.api.FabricLoader;
 import java.nio.file.Path;
 
-public class FabricPlatformHelper implements IPlatformHelper {
+public class FabricPlatformHelper implements PlatformProvider {
 
     @Override
     public String getPlatformName() {

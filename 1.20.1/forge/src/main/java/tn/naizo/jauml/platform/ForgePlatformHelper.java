@@ -1,13 +1,13 @@
 package tn.naizo.jauml.platform;
 
-import tn.naizo.jauml.platform.services.IPlatformHelper;
+import tn.naizo.jauml.spi.PlatformProvider;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLLoader;
 
 import java.nio.file.Path;
 
-public class ForgePlatformHelper implements IPlatformHelper {
+public class ForgePlatformHelper implements PlatformProvider {
 
     @Override
     public String getPlatformName() {

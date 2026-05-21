@@ -1,14 +1,15 @@
 {
     "schemaVersion": 1,
     "id": "${mod_id}",
-    "version": "1.3.0",
+    "version": "${version}",
     "name": "${mod_name}",
     "description": "${description}",
     "authors": [
         "${mod_author}"
     ],
     "contact": {
-        "homepage": "https://nightbeam.cloud"
+        "homepage": "https://github.com/MeherBenSalem/jauml",
+        "sources": "https://github.com/MeherBenSalem/jauml"
     },
     "license": "${license}",
     "icon": "${mod_id}.png",
@@ -21,7 +22,6 @@
     "mixins": [],
     "depends": {
         "fabricloader": ">=${fabric_loader_version}",
-        "fabric-api": "*",
         "minecraft": "${minecraft_version}",
         "java": ">=${java_version}"
     }
