@@ -31,10 +31,18 @@ configurations {
     commonJava {
         canBeResolved = false
         canBeConsumed = true
+        def commonTypeAttribute = Attribute.of('tn.naizo.jauml.common.type', String)
+        attributes {
+            attribute(commonTypeAttribute, 'java')
+        }
     }
     commonResources {
         canBeResolved = false
         canBeConsumed = true
+        def commonTypeAttribute = Attribute.of('tn.naizo.jauml.common.type', String)
+        attributes {
+            attribute(commonTypeAttribute, 'resources')
+        }
     }
 }
 

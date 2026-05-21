@@ -2,7 +2,7 @@ package tn.naizo.jauml.platform;
 
 import tn.naizo.jauml.spi.PlatformProvider;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
 import java.nio.file.Path;
 
@@ -20,7 +20,7 @@ public class NeoForgePlatformHelper implements PlatformProvider {
 
     @Override
     public boolean isDevelopmentEnvironment() {
-        return !FMLLoader.isProduction();
+        return !FMLEnvironment.isProduction();
     }
 
     @Override

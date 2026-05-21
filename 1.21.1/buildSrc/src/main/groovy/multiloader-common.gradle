@@ -7,10 +7,18 @@ base {
     archivesName = "${mod_id}-${project.name}-${minecraft_version}"
 }
 
+def targetJavaVersion = java_version as int
+
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
+    targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
     withSourcesJar()
     withJavadocJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release.set(targetJavaVersion)
 }
 
 repositories {
@@ -96,6 +104,7 @@ processResources {
             'description'                  : project.description,
             'neoforge_version'             : neoforge_version,
             'neoforge_loader_version_range': neoforge_loader_version_range,
+            'neoforge_version_range'        : neoforge_version_range,
             'credits'                      : credits,
             'java_version'                 : java_version
     ]

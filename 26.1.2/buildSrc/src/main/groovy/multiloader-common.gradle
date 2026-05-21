@@ -7,10 +7,18 @@ base {
     archivesName = "${mod_id}-${project.name}-${minecraft_version}"
 }
 
+def targetJavaVersion = java_version as int
+
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
+    targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
     withSourcesJar()
     withJavadocJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release.set(targetJavaVersion)
 }
 
 repositories {
@@ -70,6 +78,7 @@ processResources {
             'description'                  : project.description,
             'neoforge_version'             : neoforge_version,
             'neoforge_loader_version_range': neoforge_loader_version_range,
+            'neoforge_version_range'        : neoforge_version_range,
             'credits'                      : credits,
             'java_version'                 : java_version
     ]
@@ -99,6 +108,20 @@ publishing {
     repositories {
         maven {
             url System.getenv('local_maven_url')
+        }
+    }
+}
+
+dependencies {
+    components {
+        all { details ->
+            if (details.id.group.startsWith('net.neoforged')) {
+                details.allVariants {
+                    attributes {
+                        attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
+                    }
+                }
+            }
         }
     }
 }
