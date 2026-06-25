@@ -12,6 +12,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
+import tn.naizo.jauml.api.JaumlInitializer;
+
 @Mod(JaumlCore.MODID)
 public class JaumlCore {
     public static final String MODID = "jauml";
@@ -25,6 +27,7 @@ public class JaumlCore {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("HELLO FROM COMMON SETUP");
+        JaumlInitializer.initialize();
     }
 
     @SubscribeEvent

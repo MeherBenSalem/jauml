@@ -2,6 +2,7 @@ package tn.naizo.jauml.api;
 
 import tn.naizo.jauml.internal.PathValidator;
 import tn.naizo.jauml.spi.PlatformProvider;
+import com.google.gson.JsonObject;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -13,6 +14,33 @@ public final class JaumlConfig {
 
     private static final PlatformProvider PLATFORM_PROVIDER = loadPlatformProvider();
     private static final Map<Path, ConfigFile> CACHE = new ConcurrentHashMap<>();
+
+    public static final String LIBRARY_VERSION = "2.1.0";
+
+    /**
+     * Checks if the current library version is compatible with the required version.
+     * Assumes standard semantic versioning (major versions must match, minor version must be >= required).
+     */
+    public static boolean isCompatible(String requiredVersion) {
+        if (requiredVersion == null || requiredVersion.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            String[] currentParts = LIBRARY_VERSION.split("\\.");
+            String[] reqParts = requiredVersion.split("\\.");
+            int curMajor = Integer.parseInt(currentParts[0]);
+            int curMinor = Integer.parseInt(currentParts[1]);
+            int reqMajor = Integer.parseInt(reqParts[0]);
+            int reqMinor = Integer.parseInt(reqParts[1]);
+
+            if (curMajor != reqMajor) {
+                return false;
+            }
+            return curMinor >= reqMinor;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     private JaumlConfig() {}
 
@@ -36,6 +64,32 @@ public final class JaumlConfig {
     public static ConfigFile open(String subdirectory, String fileName) {
         Path resolved = PathValidator.resolveSafe(PLATFORM_PROVIDER.getConfigDirectory(), subdirectory, fileName);
         return CACHE.computeIfAbsent(resolved, ConfigFile::new);
+    }
+
+    /**
+     * Opens or creates a config file relative to the game's config directory with a schema.
+     */
+    public static ConfigFile open(String subdirectory, String fileName, JsonSchema schema) {
+        return open(subdirectory, fileName, schema, null, null, null);
+    }
+
+    /**
+     * Opens or creates a config file relative to the game's config directory with a schema and defaults.
+     */
+    public static ConfigFile open(String subdirectory, String fileName, JsonSchema schema, JsonObject defaultData) {
+        return open(subdirectory, fileName, schema, null, null, defaultData);
+    }
+
+    /**
+     * Opens or creates a config file relative to the game's config directory with a schema, migrator, target version, and defaults.
+     */
+    public static ConfigFile open(String subdirectory, String fileName, JsonSchema schema, JsonMigrator migrator, String targetVersion, JsonObject defaultData) {
+        Path resolved = PathValidator.resolveSafe(PLATFORM_PROVIDER.getConfigDirectory(), subdirectory, fileName);
+        return CACHE.compute(resolved, (path, existing) -> {
+            ConfigFile created = existing != null ? existing : new ConfigFile(path);
+            created.configure(schema, migrator, targetVersion, defaultData);
+            return created;
+        });
     }
 
     /**

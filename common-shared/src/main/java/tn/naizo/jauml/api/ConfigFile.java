@@ -11,12 +11,14 @@ import com.google.gson.JsonParseException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -33,6 +35,11 @@ public final class ConfigFile {
     private final Path filePath;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private JsonObject rootData;
+
+    private JsonSchema schema;
+    private JsonMigrator migrator;
+    private String targetVersion;
+    private JsonObject defaultData;
 
     ConfigFile(Path filePath) {
         this.filePath = filePath;
@@ -55,23 +62,92 @@ public final class ConfigFile {
 
     private void loadFromDisk() {
         if (!Files.exists(filePath)) {
-            this.rootData = new JsonObject();
+            this.rootData = defaultData != null ? JsonLib.deepClone(defaultData).getAsJsonObject() : new JsonObject();
             return;
         }
 
-        try (Reader reader = Files.newBufferedReader(filePath)) {
-            JsonElement parsed = JsonParser.parseReader(reader);
-            if (parsed.isJsonObject()) {
-                this.rootData = parsed.getAsJsonObject();
-            } else {
-                LOGGER.warn("Config file at {} did not contain a valid JSON object. Initializing empty config.", filePath);
-                this.rootData = new JsonObject();
+        boolean corrupted = false;
+        try {
+            byte[] bytes = Files.readAllBytes(filePath);
+            String content = new String(bytes, StandardCharsets.UTF_8);
+            if (content.trim().isEmpty()) {
+                LOGGER.warn("Config file at {} is empty.", filePath);
+                this.rootData = defaultData != null ? JsonLib.deepClone(defaultData).getAsJsonObject() : new JsonObject();
+                save();
+                return;
             }
-        } catch (IOException | JsonParseException | IllegalStateException e) {
+
+            JsonElement parsed = JsonLib.strictParse(content);
+            if (parsed.isJsonObject()) {
+                JsonObject obj = parsed.getAsJsonObject();
+
+                // 1. Migration
+                if (migrator != null && targetVersion != null) {
+                    try {
+                        obj = migrator.migrate(obj, targetVersion);
+                    } catch (Exception e) {
+                        LOGGER.error("Migration failed for config file " + filePath + ". Reverting to default config.", e);
+                        corrupted = true;
+                    }
+                }
+
+                // 2. Normalization / Default Merge
+                if (!corrupted && defaultData != null) {
+                    obj = JsonLib.normalize(obj, defaultData).getAsJsonObject();
+                }
+
+                // 3. Schema Validation
+                if (!corrupted && schema != null) {
+                    try {
+                        schema.validate(obj);
+                    } catch (Exception e) {
+                        LOGGER.error("Schema validation failed for config file " + filePath + ": " + e.getMessage(), e);
+                        if (defaultData != null) {
+                            LOGGER.warn("Attempting to normalize config to schema template.");
+                            obj = JsonLib.normalize(obj, defaultData).getAsJsonObject();
+                            schema.validate(obj); // validation check after normalization
+                        } else {
+                            corrupted = true;
+                        }
+                    }
+                }
+
+                if (!corrupted) {
+                    this.rootData = obj;
+                    return;
+                }
+            } else {
+                LOGGER.warn("Config file at {} did not contain a valid JSON object.", filePath);
+                corrupted = true;
+            }
+        } catch (Exception e) {
             LOGGER.error("Failed to load or parse config file: " + filePath, e);
-            this.rootData = new JsonObject(); // Fallback to safe state to prevent null crashes
+            corrupted = true;
+        }
+
+        if (corrupted) {
+            handleCorruptedConfig();
         }
     }
+
+    private void handleCorruptedConfig() {
+        try {
+            Path backupPath = filePath.getParent().resolve(filePath.getFileName().toString() + ".bak");
+            Files.deleteIfExists(backupPath);
+            if (Files.exists(filePath)) {
+                Files.move(filePath, backupPath);
+                LOGGER.warn("Corrupted config file backed up to {}", backupPath);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to create backup of corrupted config file: " + filePath, e);
+        }
+
+        // Reset to default config in memory
+        this.rootData = defaultData != null ? JsonLib.deepClone(defaultData).getAsJsonObject() : new JsonObject();
+        // Save clean copy so startup doesn't fail
+        save();
+    }
+
 
     /**
      * Writes the current in-memory configuration back to disk atomically.
@@ -124,6 +200,54 @@ public final class ConfigFile {
      */
     public Path path() {
         return filePath;
+    }
+
+    public ConfigFile configure(JsonSchema schema, JsonMigrator migrator, String targetVersion, JsonObject defaultData) {
+        lock.writeLock().lock();
+        try {
+            this.schema = schema;
+            this.migrator = migrator;
+            this.targetVersion = targetVersion;
+            this.defaultData = defaultData;
+            loadFromDisk();
+            return this;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public ConfigFile setSchema(JsonSchema schema) {
+        lock.writeLock().lock();
+        try {
+            this.schema = schema;
+            loadFromDisk();
+            return this;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public ConfigFile setMigrator(JsonMigrator migrator, String targetVersion) {
+        lock.writeLock().lock();
+        try {
+            this.migrator = migrator;
+            this.targetVersion = targetVersion;
+            loadFromDisk();
+            return this;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public ConfigFile setDefaultData(JsonObject defaultData) {
+        lock.writeLock().lock();
+        try {
+            this.defaultData = defaultData;
+            loadFromDisk();
+            return this;
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     // ==================== GETTERS ====================
