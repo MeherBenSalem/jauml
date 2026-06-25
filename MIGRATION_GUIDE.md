@@ -6,8 +6,8 @@ This guide documents the changes introduced in version `2.1.0` of the JSON libra
 
 | Library Version | Supported JAUML App Versions | Compatible Java Versions | Gson Dependency Version |
 | :--- | :--- | :--- | :--- |
-| **2.0.0** | Minecraft 1.20.1, 1.21.1, 1.21.11, 26.1.2 | Java 17, 21, 25 | Gson 2.10.x |
-| **2.1.0** (Current) | Minecraft 1.20.1, 1.21.1, 1.21.11, 26.1.2 | Java 17, 21, 25 | Gson 2.10.x |
+| **2.0.0** | Minecraft 1.20.1, 1.21.1, 1.21.11, 26.1.2, 26.2 | Java 17, 21, 25 | Gson 2.10.x |
+| **2.1.0** (Current) | Minecraft 1.20.1, 1.21.1, 1.21.11, 26.1.2, 26.2 | Java 17, 21, 25 | Gson 2.10.x |
 
 ---
 
