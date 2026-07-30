@@ -1,7 +1,6 @@
 # Local build + GitHub release for Jauml MultiLoader.
-# Modrinth/CurseForge: run after this with
-#   gh workflow run publish.yml -f version=X.Y.Z
-# (upload-only workflow; requires repo secrets)
+# Modrinth/CurseForge (upload-only, no CI build):
+#   gh workflow run publish.yml --repo MeherBenSalem/jauml -f version=X.Y.Z
 #
 # Usage:
 #   .\publish_local.ps1
@@ -30,7 +29,7 @@ if (-not $SkipBuild) {
 }
 
 $distDir = Join-Path $root "dist"
-if (-not (Test-Path $distDir)) { throw "dist/ missing — run build first" }
+if (-not (Test-Path $distDir)) { throw "dist/ missing - run build first" }
 $jars = Get-ChildItem $distDir -Filter "jauml-*.jar"
 if ($jars.Count -eq 0) { throw "No jars in dist/" }
 
@@ -38,21 +37,29 @@ $patchNotes = Join-Path $root "Jauml-$Version-PatchNotes.md"
 $notesFile = if (Test-Path $patchNotes) { $patchNotes } else { $null }
 
 $tag = "v$Version"
-$existing = gh release view $tag --repo MeherBenSalem/jauml 2>$null
+gh release view $tag --repo MeherBenSalem/jauml 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "GitHub release $tag exists — uploading assets..." -ForegroundColor Yellow
+    Write-Host "GitHub release $tag exists - uploading assets..." -ForegroundColor Yellow
     foreach ($jar in $jars) {
         gh release upload $tag $jar.FullName --repo MeherBenSalem/jauml --clobber
     }
 } else {
-    $args = @("release", "create", $tag) + ($jars | ForEach-Object { $_.FullName }) + @("--repo", "MeherBenSalem/jauml", "--title", "Jauml $Version")
-    if ($notesFile) { $args += @("--notes-file", $notesFile) } else { $args += @("--notes", "Jauml $Version") }
-    & gh @args
+    $ghArgs = @("release", "create", $tag)
+    foreach ($jar in $jars) { $ghArgs += $jar.FullName }
+    $ghArgs += @("--repo", "MeherBenSalem/jauml", "--title", "Jauml $Version")
+    if ($notesFile) {
+        $ghArgs += @("--notes-file", $notesFile)
+    } else {
+        $ghArgs += @("--notes", "Jauml $Version")
+    }
+    & gh @ghArgs
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-Write-Host "`nJars in dist/ ($($jars.Count)):" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Jars in dist/ ($($jars.Count)):" -ForegroundColor Cyan
 $jars | ForEach-Object { Write-Host "  $($_.Name)" }
 
-Write-Host "`nNext (Modrinth + CurseForge upload-only, no CI build):" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Modrinth + CurseForge (upload-only workflow):" -ForegroundColor Yellow
 Write-Host "  gh workflow run publish.yml --repo MeherBenSalem/jauml -f version=$Version"
-Write-Host "  gh run list --repo MeherBenSalem/jauml --workflow publish.yml"
