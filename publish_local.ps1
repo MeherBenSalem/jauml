@@ -37,8 +37,15 @@ $patchNotes = Join-Path $root "Jauml-$Version-PatchNotes.md"
 $notesFile = if (Test-Path $patchNotes) { $patchNotes } else { $null }
 
 $tag = "v$Version"
-gh release view $tag --repo MeherBenSalem/jauml 2>$null | Out-Null
-if ($LASTEXITCODE -eq 0) {
+$releaseExists = $false
+try {
+    gh release view $tag --repo MeherBenSalem/jauml 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) { $releaseExists = $true }
+} catch {
+    $releaseExists = $false
+}
+
+if ($releaseExists) {
     Write-Host "GitHub release $tag exists - uploading assets..." -ForegroundColor Yellow
     foreach ($jar in $jars) {
         gh release upload $tag $jar.FullName --repo MeherBenSalem/jauml --clobber
