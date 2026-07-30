@@ -132,31 +132,24 @@ jobs:
               console.log('Skipping Modrinth (curseforge_only=true)');
             }
 
-            const gvRes = await fetch('https://minecraft.curseforge.com/api/game/versions', {
-              headers: { 'X-Api-Token': process.env.CURSEFORGE_TOKEN },
+            const gvRes = await fetch('https://api.curseforge.com/v1/minecraft/game-versions', {
+              headers: { 'x-api-key': process.env.CURSEFORGE_API_KEY },
             });
             if (!gvRes.ok) {
               const t = await gvRes.text();
-              throw new Error('CurseForge versions API ' + gvRes.status + ' ' + t.slice(0, 500));
+              throw new Error('CurseForge minecraft/game-versions API ' + gvRes.status + ' ' + t.slice(0, 500));
             }
-            const flat = await gvRes.json();
-            const findId = (want, preferType) => {
-              const hits = flat.filter((v) => v.name === want);
-              if (preferType != null) {
-                const hit = hits.find((v) => v.gameVersionTypeID === preferType);
-                if (!hit) {
-                  const seen = hits.map((h) => `${h.id}(type ${h.gameVersionTypeID})`).join(', ') || 'none';
-                  throw new Error(`No CF version for ${want} with type ${preferType}; matches: ${seen}`);
-                }
-                return hit.id;
-              }
-              if (!hits[0]) throw new Error('No CF game version for ' + want);
-              return hits[0].id;
+            const gvJson = await gvRes.json();
+            const mcVersions = gvJson.data || [];
+            const resolveGameId = (game) => {
+              const hit = mcVersions.find((v) => v.versionString === game || v.name === game);
+              if (!hit) throw new Error('No CF minecraft game version for ' + game);
+              return hit.id;
             };
             const LOADER_IDS = { fabric: 7499, forge: 7498, neoforge: 10150 };
 
             for (const p of parsed) {
-              const gameId = findId(p.game, 1);
+              const gameId = resolveGameId(p.game);
               const loaderId = LOADER_IDS[p.loader];
               if (!loaderId) throw new Error('Unknown loader for ' + p.name);
               const meta = {
