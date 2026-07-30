@@ -153,24 +153,12 @@ jobs:
               if (!hits[0]) throw new Error('No CF game version for ' + want);
               return hits[0].id;
             };
-            const LOADER_TYPE = 68441;
-            const LOADER_FALLBACK = { fabric: 7499, forge: 7498, neoforge: 10150 };
-            const resolveLoaderId = (loader) => {
-              const label = { fabric: 'Fabric', forge: 'Forge', neoforge: 'NeoForge' }[loader];
-              if (!label) throw new Error('Unknown loader ' + loader);
-              try {
-                return findId(label, LOADER_TYPE);
-              } catch (e) {
-                const fallback = LOADER_FALLBACK[loader];
-                if (!fallback) throw e;
-                console.warn('CF loader lookup failed for', label, '- using fallback id', fallback);
-                return fallback;
-              }
-            };
+            const LOADER_IDS = { fabric: 7499, forge: 7498, neoforge: 10150 };
 
             for (const p of parsed) {
               const gameId = findId(p.game, 1);
-              const loaderId = resolveLoaderId(p.loader);
+              const loaderId = LOADER_IDS[p.loader];
+              if (!loaderId) throw new Error('Unknown loader for ' + p.name);
               const meta = {
                 changelog: `## Jauml ${version}\n\n### Bug Fixes\n* Fixed Fabric/NeoForge 26.1.2 MixinMinecraft @Mixin crash (#3/#4).`,
                 changelogType: 'markdown',
