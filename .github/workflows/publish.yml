@@ -132,24 +132,33 @@ jobs:
               console.log('Skipping Modrinth (curseforge_only=true)');
             }
 
-            const gvRes = await fetch('https://api.curseforge.com/v1/minecraft/game-versions', {
-              headers: { 'x-api-key': process.env.CURSEFORGE_API_KEY },
-            });
-            if (!gvRes.ok) {
-              const t = await gvRes.text();
-              throw new Error('CurseForge minecraft/game-versions API ' + gvRes.status + ' ' + t.slice(0, 500));
-            }
-            const gvJson = await gvRes.json();
-            const mcVersions = gvJson.data || [];
-            const resolveGameId = (game) => {
-              const hit = mcVersions.find((v) => v.versionString === game || v.name === game);
-              if (!hit) throw new Error('No CF minecraft game version for ' + game);
-              return hit.id;
-            };
             const LOADER_IDS = { fabric: 7499, forge: 7498, neoforge: 10150 };
+            const resolveGameId = async (game) => {
+              const verRes = await fetch(
+                `https://api.curseforge.com/v1/minecraft/version/${encodeURIComponent(game)}`,
+                { headers: { 'x-api-key': process.env.CURSEFORGE_API_KEY, Accept: 'application/json' } },
+              );
+              if (verRes.ok) {
+                const verJson = await verRes.json();
+                const id = verJson.data?.id ?? verJson.data?.gameVersionId;
+                if (id) return id;
+              }
+              const legacyRes = await fetch('https://minecraft.curseforge.com/api/game/versions', {
+                headers: { 'X-Api-Token': process.env.CURSEFORGE_TOKEN },
+              });
+              if (!legacyRes.ok) throw new Error('CurseForge legacy versions API ' + legacyRes.status);
+              const flat = await legacyRes.json();
+              const slug = game.replace(/\./g, '-');
+              const candidates = flat.filter((v) => v.name === game || v.slug === slug);
+              for (const typeId of [77784, 1]) {
+                const hit = candidates.find((v) => v.gameVersionTypeID === typeId);
+                if (hit) return hit.id;
+              }
+              throw new Error('No CF game version id for ' + game);
+            };
 
             for (const p of parsed) {
-              const gameId = resolveGameId(p.game);
+              const gameId = await resolveGameId(p.game);
               const loaderId = LOADER_IDS[p.loader];
               if (!loaderId) throw new Error('Unknown loader for ' + p.name);
               const meta = {
