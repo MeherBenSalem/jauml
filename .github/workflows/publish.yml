@@ -132,40 +132,58 @@ jobs:
               console.log('Skipping Modrinth (curseforge_only=true)');
             }
 
-            const gvRes = await fetch('https://api.curseforge.com/v1/games/432/versions', {
-              headers: { 'x-api-key': process.env.CURSEFORGE_API_KEY },
+            const gvRes = await fetch('https://minecraft.curseforge.com/api/game/versions', {
+              headers: { 'X-Api-Token': process.env.CURSEFORGE_TOKEN },
             });
             if (!gvRes.ok) {
               const t = await gvRes.text();
               throw new Error('CurseForge versions API ' + gvRes.status + ' ' + t.slice(0, 500));
             }
-            const gvJson = await gvRes.json();
-            const cfGameVersions = new Set();
-            for (const group of gvJson.data || []) {
-              for (const v of group.versions || []) cfGameVersions.add(String(v));
-            }
-            const MOD_LOADER_TYPE = { forge: 1, fabric: 4, neoforge: 6 };
+            const flat = await gvRes.json();
+            const findId = (want, preferType) => {
+              const hits = flat.filter((v) => v.name === want);
+              if (preferType != null) {
+                const hit = hits.find((v) => v.gameVersionTypeID === preferType);
+                if (!hit) {
+                  const seen = hits.map((h) => `${h.id}(type ${h.gameVersionTypeID})`).join(', ') || 'none';
+                  throw new Error(`No CF version for ${want} with type ${preferType}; matches: ${seen}`);
+                }
+                return hit.id;
+              }
+              if (!hits[0]) throw new Error('No CF game version for ' + want);
+              return hits[0].id;
+            };
+            const LOADER_TYPE = 68441;
+            const LOADER_FALLBACK = { fabric: 7499, forge: 7498, neoforge: 10150 };
+            const resolveLoaderId = (loader) => {
+              const label = { fabric: 'Fabric', forge: 'Forge', neoforge: 'NeoForge' }[loader];
+              if (!label) throw new Error('Unknown loader ' + loader);
+              try {
+                return findId(label, LOADER_TYPE);
+              } catch (e) {
+                const fallback = LOADER_FALLBACK[loader];
+                if (!fallback) throw e;
+                console.warn('CF loader lookup failed for', label, '- using fallback id', fallback);
+                return fallback;
+              }
+            };
 
             for (const p of parsed) {
-              if (!cfGameVersions.has(p.game)) {
-                throw new Error('No CF game version for ' + p.game + ' (' + p.name + ')');
-              }
-              const modLoaderType = MOD_LOADER_TYPE[p.loader];
-              if (!modLoaderType) throw new Error('Unknown loader for ' + p.name);
+              const gameId = findId(p.game, 1);
+              const loaderId = resolveLoaderId(p.loader);
               const meta = {
                 changelog: `## Jauml ${version}\n\n### Bug Fixes\n* Fixed Fabric/NeoForge 26.1.2 MixinMinecraft @Mixin crash (#3/#4).`,
                 changelogType: 'markdown',
                 displayName: p.name,
-                gameVersions: [p.game],
-                modLoaderType,
+                gameVersions: [gameId, loaderId],
                 releaseType: 'release',
               };
               const cfForm = new FormData();
               cfForm.append('metadata', JSON.stringify(meta));
               cfForm.append('file', new Blob([fs.readFileSync(p.jar)]), p.name);
               const cfRes = await fetch(
-                `https://api.curseforge.com/v1/mods/${process.env.CURSEFORGE_ID}/files`,
-                { method: 'POST', headers: { 'x-api-key': process.env.CURSEFORGE_API_KEY }, body: cfForm },
+                `https://minecraft.curseforge.com/api/projects/${process.env.CURSEFORGE_ID}/upload-file`,
+                { method: 'POST', headers: { 'X-Api-Token': process.env.CURSEFORGE_TOKEN }, body: cfForm },
               );
               const cfText = await cfRes.text();
               if (!cfRes.ok) throw new Error('CurseForge ' + cfRes.status + ' ' + p.name + ' ' + cfText.slice(0, 500));
