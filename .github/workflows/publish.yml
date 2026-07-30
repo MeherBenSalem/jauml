@@ -149,8 +149,6 @@ jobs:
               if (!hits[0]) throw new Error('No CF game version for ' + want);
               return hits[0].id;
             };
-            const client = findId('Client');
-            const server = findId('Server');
             const loaderIds = {
               fabric: findId('Fabric', 68441),
               forge: findId('Forge', 68441),
@@ -164,7 +162,7 @@ jobs:
                 changelog: `## Jauml ${version}\n\n### Bug Fixes\n* Fixed Fabric/NeoForge 26.1.2 MixinMinecraft @Mixin crash (#3/#4).`,
                 changelogType: 'markdown',
                 displayName: p.name,
-                gameVersions: [client, server, loaderId, gameId],
+                gameVersions: [loaderId, gameId],
                 releaseType: 'release',
               };
               const cfForm = new FormData();
