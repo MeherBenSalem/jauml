@@ -5,6 +5,14 @@ All notable changes to the JAUML JSON Utility Library will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-07-30
+
+### Fixed
+- Removed legacy stub `MixinMinecraft` mixin registration that crashed Fabric/NeoForge 26.1.2 when users were still on **1.3.0** jars (`InvalidMixinException: missing an @Mixin annotation`). Fixes [#3](https://github.com/MeherBenSalem/jauml/issues/3) and [#4](https://github.com/MeherBenSalem/jauml/issues/4).
+
+### Changed
+- Publish workflow builds all MultiLoader workspaces and uploads every loader jar to Modrinth, CurseForge, and GitHub Releases.
+
 ## [2.1.0] - 2026-06-25
 
 ### Added
