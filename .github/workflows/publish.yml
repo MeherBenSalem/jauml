@@ -133,6 +133,23 @@ jobs:
             }
 
             const LOADER_IDS = { fabric: 7499, forge: 7498, neoforge: 10150 };
+            const legacyRes = await fetch('https://minecraft.curseforge.com/api/game/versions', {
+              headers: { 'X-Api-Token': process.env.CURSEFORGE_TOKEN },
+            });
+            if (!legacyRes.ok) throw new Error('CurseForge legacy versions API ' + legacyRes.status);
+            const legacyFlat = await legacyRes.json();
+            const findLegacy = (want, preferType) => {
+              const hits = legacyFlat.filter((v) => v.name === want);
+              if (preferType != null) {
+                const hit = hits.find((v) => v.gameVersionTypeID === preferType);
+                if (!hit) throw new Error(`No CF legacy version for ${want} (type ${preferType})`);
+                return hit.id;
+              }
+              if (!hits[0]) throw new Error('No CF legacy version for ' + want);
+              return hits[0].id;
+            };
+            const clientId = findLegacy('Client');
+            const serverId = findLegacy('Server');
             const resolveGameId = async (game) => {
               const verRes = await fetch(
                 `https://api.curseforge.com/v1/minecraft/version/${encodeURIComponent(game)}`,
@@ -159,13 +176,8 @@ jobs:
                 }
               }
               typeIds.push(77784, 1);
-              const legacyRes = await fetch('https://minecraft.curseforge.com/api/game/versions', {
-                headers: { 'X-Api-Token': process.env.CURSEFORGE_TOKEN },
-              });
-              if (!legacyRes.ok) throw new Error('CurseForge legacy versions API ' + legacyRes.status);
-              const flat = await legacyRes.json();
               const slug = game.replace(/\./g, '-');
-              const candidates = flat.filter((v) => v.name === game || v.slug === slug);
+              const candidates = legacyFlat.filter((v) => v.name === game || v.slug === slug);
               for (const typeId of typeIds) {
                 const hit = candidates.find((v) => v.gameVersionTypeID === typeId);
                 if (hit) {
@@ -184,7 +196,7 @@ jobs:
                 changelog: `## Jauml ${version}\n\n### Bug Fixes\n* Fixed Fabric/NeoForge 26.1.2 MixinMinecraft @Mixin crash (#3/#4).`,
                 changelogType: 'markdown',
                 displayName: p.name,
-                gameVersions: [gameId, loaderId],
+                gameVersions: [clientId, serverId, loaderId, gameId],
                 releaseType: 'release',
               };
               const cfForm = new FormData();
