@@ -70,3 +70,4 @@ $jars | ForEach-Object { Write-Host "  $($_.Name)" }
 Write-Host ""
 Write-Host "Modrinth + CurseForge (upload-only workflow):" -ForegroundColor Yellow
 Write-Host "  gh workflow run publish.yml --repo MeherBenSalem/jauml -f version=$Version"
+Write-Host "  gh workflow run publish.yml --repo MeherBenSalem/jauml -f version=$Version -f curseforge_only=true"
