@@ -140,9 +140,25 @@ jobs:
               );
               if (verRes.ok) {
                 const verJson = await verRes.json();
-                const id = verJson.data?.id ?? verJson.data?.gameVersionId;
-                if (id) return id;
+                const gvId = verJson.data?.gameVersionId;
+                if (gvId) {
+                  console.log('CF game', game, '-> gameVersionId', gvId);
+                  return gvId;
+                }
               }
+              const typesRes = await fetch('https://api.curseforge.com/v1/games/432/version-types', {
+                headers: { 'x-api-key': process.env.CURSEFORGE_API_KEY, Accept: 'application/json' },
+              });
+              const typeIds = [];
+              if (typesRes.ok) {
+                const typesJson = await typesRes.json();
+                for (const t of typesJson.data || []) {
+                  if (/minecraft/i.test(t.name) && !/bukkit|spigot|paper|plugin/i.test(t.name)) {
+                    typeIds.push(t.id);
+                  }
+                }
+              }
+              typeIds.push(77784, 1);
               const legacyRes = await fetch('https://minecraft.curseforge.com/api/game/versions', {
                 headers: { 'X-Api-Token': process.env.CURSEFORGE_TOKEN },
               });
@@ -150,9 +166,12 @@ jobs:
               const flat = await legacyRes.json();
               const slug = game.replace(/\./g, '-');
               const candidates = flat.filter((v) => v.name === game || v.slug === slug);
-              for (const typeId of [77784, 1]) {
+              for (const typeId of typeIds) {
                 const hit = candidates.find((v) => v.gameVersionTypeID === typeId);
-                if (hit) return hit.id;
+                if (hit) {
+                  console.log('CF game', game, '-> legacy id', hit.id, 'type', hit.gameVersionTypeID);
+                  return hit.id;
+                }
               }
               throw new Error('No CF game version id for ' + game);
             };
