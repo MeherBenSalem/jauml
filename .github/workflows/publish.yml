@@ -1,28 +1,15 @@
-# Dual-publish NightBeam MultiLoader jauml jars to Modrinth + CurseForge on version tags.
-#
-# Org/repo secrets:
-#   MODRINTH_TOKEN
-#   CURSEFORGE_TOKEN
-#   CURSEFORGE_API_KEY
-#
-# Repo variables:
-#   MODRINTH_ID
-#   CURSEFORGE_ID
-#
-# Usage:
-#   git tag v2.1.1 && git push --tags
+# Upload-only: Modrinth + CurseForge from an existing GitHub Release.
+# Build locally first:  .\publish_local.ps1
+# Then upload:           gh workflow run publish.yml -f version=2.1.1
 
 name: Publish
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
     inputs:
       version:
-        description: Version (without v) when not tagging
-        required: false
+        description: Version (without v) matching GitHub Release assets
+        required: true
       dry_run:
         description: Skip uploads if true
         required: false
@@ -32,93 +19,39 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-
       - name: Resolve version
         id: ver
         shell: bash
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          elif [[ -n "${{ inputs.version }}" ]]; then
-            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "Provide a v*.*.* tag or workflow_dispatch version" >&2
-            exit 1
-          fi
+        run: echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: |
-            17
-            21
-            25
-
-      - uses: gradle/actions/setup-gradle@v4
-
-      - name: Build all MultiLoader workspaces
+      - name: Download release jars
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          for ws in 1.20.1 1.21.1 1.21.11 26.1.2 26.2; do
-            echo "::group::Build $ws"
-            case "$ws" in
-              1.20.1) export JAVA_HOME="${JAVA_HOME_17_X64}" ;;
-              1.21.1|1.21.11) export JAVA_HOME="${JAVA_HOME_21_X64}" ;;
-              26.1.2|26.2) export JAVA_HOME="${JAVA_HOME_25_X64}" ;;
-            esac
-            echo "Using JAVA_HOME=$JAVA_HOME for $ws"
-            chmod +x "$ws/gradlew"
-            (cd "$ws" && ./gradlew clean build --no-daemon)
-            echo "::endgroup::"
-          done
+          mkdir -p dist
+          gh release download "v${VERSION}" --repo "${{ github.repository }}" --dir dist --pattern 'jauml-*.jar'
+          ls -la dist/
+          count=$(find dist -name 'jauml-*.jar' | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "No jauml-*.jar on release v${VERSION}. Run publish_local.ps1 first." >&2
+            exit 1
+          fi
 
       - name: Find release jars
         id: jars
         shell: bash
         run: |
-          set -euo pipefail
-          mapfile -t JARS < <(
-            find ./1.20.1 ./1.21.1 ./1.21.11 ./26.1.2 ./26.2 -type f -path '*/build/libs/*.jar' \
-              ! -name '*-sources.jar' ! -name '*-javadoc.jar' \
-              ! -name '*-dev.jar' ! -name '*-dev-shadow.jar' ! -name '*-sources-dev.jar' \
-              | grep -E '/(fabric|forge|neoforge)/build/libs/' \
-              | sort
-          )
-          if [ ${#JARS[@]} -eq 0 ]; then
-            echo "No loader jars in build/libs" >&2
-            exit 1
-          fi
+          mapfile -t JARS < <(find dist -type f -name 'jauml-*.jar' | sort)
           printf '%s\n' "${JARS[@]}"
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
           echo "list<<$EOF" >> "$GITHUB_OUTPUT"
           printf '%s\n' "${JARS[@]}" >> "$GITHUB_OUTPUT"
           echo "$EOF" >> "$GITHUB_OUTPUT"
-
-      - name: Upload jars to GitHub Release
-        if: ${{ startsWith(github.ref, 'refs/tags/v') && inputs.dry_run != 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.ver.outputs.version }}
-          JAR_LIST: ${{ steps.jars.outputs.list }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t JARS <<< "$JAR_LIST"
-          NOTES="Jauml ${VERSION}
-
-          ### Bug Fixes
-          * Fixed Fabric/NeoForge 26.1.2 crash: stub MixinMinecraft missing @Mixin (#3, #4). Upgrade from 1.3.0 required.
-
-          ### Compatibility
-          * Shared version ${VERSION} across 1.20.1 / 1.21.1 / 1.21.11 / 26.1.2 / 26.2 (Fabric, Forge, NeoForge)."
-          gh release create "v${VERSION}" "${JARS[@]}" \
-            --title "Jauml ${VERSION}" \
-            --notes "$NOTES" \
-            --verify-tag
 
       - uses: actions/setup-node@v4
         with:
@@ -150,7 +83,6 @@ jobs:
             if (/neoforge/i.test(n)) loader = 'neoforge';
             else if (/forge/i.test(n)) loader = 'forge';
             else if (/fabric/i.test(n)) loader = 'fabric';
-            // jauml-{loader}-{mc}-{semver}.jar
             const m = n.match(/^jauml-(?:fabric|forge|neoforge)-(.+)-(\d+\.\d+\.\d+(?:-[A-Za-z0-9.]+)?)\.jar$/i);
             const game = m ? m[1] : null;
             return { jar, name: n, loader, game };
@@ -162,12 +94,11 @@ jobs:
           }
 
           (async () => {
-            // One Modrinth version per jar (matches existing jauml Modrinth history)
             for (const p of parsed) {
               const body = {
                 name: `Jauml ${version}`,
                 version_number: version,
-                changelog: `## Jauml ${version}\n\n### Bug Fixes\n* Fixed Fabric/NeoForge 26.1.2 crash from stub MixinMinecraft missing @Mixin (issues #3/#4). If you are on 1.3.0, upgrade immediately.\n\n### Compatibility\n* ${p.loader} · Minecraft ${p.game}`,
+                changelog: `## Jauml ${version}\n\n### Bug Fixes\n* Fixed Fabric/NeoForge 26.1.2 crash from stub MixinMinecraft missing @Mixin (#3/#4).\n\n### File\n* ${p.name}`,
                 dependencies: [],
                 game_versions: [p.game],
                 version_type: 'release',
@@ -188,7 +119,7 @@ jobs:
               });
               const mrText = await mrRes.text();
               if (!mrRes.ok) throw new Error('Modrinth ' + mrRes.status + ' ' + p.name + ' ' + mrText.slice(0, 500));
-              console.log('Modrinth OK', p.name, mrText.slice(0, 120));
+              console.log('Modrinth OK', p.name);
             }
 
             const gvRes = await fetch('https://api.curseforge.com/v1/games/432/versions', {
@@ -197,8 +128,6 @@ jobs:
             const gvJson = await gvRes.json();
             const flat = [];
             for (const g of gvJson.data || []) for (const v of g.versions || []) flat.push(v);
-
-            // CurseForge loader version IDs (Minecraft)
             const LOADER_IDS = { forge: 1, fabric: 4, neoforge: 6 };
 
             for (const p of parsed) {
@@ -207,9 +136,8 @@ jobs:
               const gameVersions = [hit.id];
               const loaderId = LOADER_IDS[p.loader];
               if (loaderId) gameVersions.push(loaderId);
-
               const meta = {
-                changelog: `## Jauml ${version}\n\n### Bug Fixes\n* Fixed Fabric/NeoForge 26.1.2 crash from stub MixinMinecraft missing @Mixin (#3/#4).\n\n### File\n* ${p.name}`,
+                changelog: `## Jauml ${version}\n\n### Bug Fixes\n* Fixed Fabric/NeoForge 26.1.2 MixinMinecraft @Mixin crash (#3/#4).`,
                 changelogType: 'markdown',
                 displayName: p.name,
                 gameVersions,
@@ -224,7 +152,7 @@ jobs:
               );
               const cfText = await cfRes.text();
               if (!cfRes.ok) throw new Error('CurseForge ' + cfRes.status + ' ' + p.name + ' ' + cfText.slice(0, 500));
-              console.log('CurseForge OK', p.name, cfText.slice(0, 120));
+              console.log('CurseForge OK', p.name);
             }
           })().catch((e) => { console.error(e); process.exit(1); });
           NODE
