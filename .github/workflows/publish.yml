@@ -59,19 +59,18 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Strip Windows-only org.gradle.java.home
-        shell: bash
-        run: |
-          find . -name gradle.properties -print0 | while IFS= read -r -d '' f; do
-            sed -i '/^org\.gradle\.java\.home=/d' "$f"
-          done
-
       - name: Build all MultiLoader workspaces
         shell: bash
         run: |
           set -euo pipefail
           for ws in 1.20.1 1.21.1 1.21.11 26.1.2 26.2; do
             echo "::group::Build $ws"
+            case "$ws" in
+              1.20.1) export JAVA_HOME="${JAVA_HOME_17_X64}" ;;
+              1.21.1|1.21.11) export JAVA_HOME="${JAVA_HOME_21_X64}" ;;
+              26.1.2|26.2) export JAVA_HOME="${JAVA_HOME_25_X64}" ;;
+            esac
+            echo "Using JAVA_HOME=$JAVA_HOME for $ws"
             chmod +x "$ws/gradlew"
             (cd "$ws" && ./gradlew clean build --no-daemon)
             echo "::endgroup::"

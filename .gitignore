@@ -117,7 +117,7 @@ runs/
 
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
-gradle.properties
+# gradle.properties is tracked (version sync); use local gradle.properties.local for machine-specific overrides if needed
 
 # Eclipse/VSCode bin folders
 bin/
