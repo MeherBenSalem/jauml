@@ -202,13 +202,24 @@ jobs:
               const cfForm = new FormData();
               cfForm.append('metadata', JSON.stringify(meta));
               cfForm.append('file', new Blob([fs.readFileSync(p.jar)]), p.name);
-              const cfRes = await fetch(
-                `https://minecraft.curseforge.com/api/projects/${process.env.CURSEFORGE_ID}/upload-file`,
-                { method: 'POST', headers: { 'X-Api-Token': process.env.CURSEFORGE_TOKEN }, body: cfForm },
-              );
-              const cfText = await cfRes.text();
-              if (!cfRes.ok) throw new Error('CurseForge ' + cfRes.status + ' ' + p.name + ' ' + cfText.slice(0, 500));
-              console.log('CurseForge OK', p.name, cfText.slice(0, 120));
+              let cfText = '';
+              for (let attempt = 1; attempt <= 4; attempt++) {
+                const cfRes = await fetch(
+                  `https://minecraft.curseforge.com/api/projects/${process.env.CURSEFORGE_ID}/upload-file`,
+                  { method: 'POST', headers: { 'X-Api-Token': process.env.CURSEFORGE_TOKEN }, body: cfForm },
+                );
+                cfText = await cfRes.text();
+                if (cfRes.ok) {
+                  console.log('CurseForge OK', p.name, cfText.slice(0, 120));
+                  break;
+                }
+                if ((cfRes.status === 503 || cfRes.status === 429) && attempt < 4) {
+                  console.warn('CurseForge', cfRes.status, 'for', p.name, '- retry', attempt);
+                  await new Promise((r) => setTimeout(r, 15000 * attempt));
+                  continue;
+                }
+                throw new Error('CurseForge ' + cfRes.status + ' ' + p.name + ' ' + cfText.slice(0, 500));
+              }
             }
           })().catch((e) => { console.error(e); process.exit(1); });
           NODE
